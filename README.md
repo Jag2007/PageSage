@@ -50,4 +50,4 @@ PageSage/
 └── ui.py
 ```
 
-*Built with care by Tejaswini Palwai — because every page deserves to be understood.*
+*Built with care by Jagruthi Pulumati — because every page deserves to be understood.*

@@ -33,10 +33,10 @@ st.set_page_config(page_title="PageSage", page_icon="📖", layout="wide")
 st.markdown(
     """
     <div style="padding: 3.5rem 0 3rem 0;">
-        <div style="font-size: 3rem; font-weight: 700; letter-spacing: 0.18em; color: #1A1A1A;">
+        <div style="font-size: 3rem; font-weight: 700; letter-spacing: 0.18em; color: #F4FAFF;">
             PageSage
         </div>
-        <div style="margin-top: 0.85rem; font-size: 1rem; font-style: italic; color: #C9A84C;">
+        <div style="margin-top: 0.85rem; font-size: 1rem; font-style: italic; color: #7EC8FF;">
             Wisdom from every page.
         </div>
     </div>
@@ -80,7 +80,7 @@ with st.sidebar:
 if st.session_state.vectorstore is None:
     st.markdown(
         """
-        <div style="padding-top: 12vh; text-align: center; color: #7A7A74;">
+        <div style="padding-top: 12vh; text-align: center; color: #B9D9F3;">
             <div style="font-size: 1rem;">Upload your PDFs from the sidebar to begin.</div>
             <div style="margin-top: 0.5rem; font-size: 0.95rem;">PageSage will find the wisdom within.</div>
         </div>

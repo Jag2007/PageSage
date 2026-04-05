@@ -1,4 +1,10 @@
+import logging
+
 import streamlit as st
+from app.ingest import ingest_documents, load_existing_index
+from app.rag import build_qa_chain
+
+logger = logging.getLogger(__name__)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -8,6 +14,14 @@ if "qa_chain" not in st.session_state:
     st.session_state.qa_chain = None
 if "chunks_count" not in st.session_state:
     st.session_state.chunks_count = 0
+
+try:
+    vectorstore = load_existing_index()
+    if vectorstore is not None and st.session_state.qa_chain is None:
+        st.session_state.vectorstore = vectorstore
+        st.session_state.qa_chain = build_qa_chain(vectorstore)
+except Exception as exc:
+    logger.warning("Failed to restore existing index on startup: %s", exc)
 
 st.set_page_config(page_title="PageSage", page_icon="📖", layout="wide")
 
@@ -26,12 +40,35 @@ st.markdown(
 )
 
 with st.sidebar:
-    # --- Document Upload ---
+    st.markdown("### 📄 Documents")
+    uploaded_files = st.file_uploader(
+        "Upload PDFs", type=["pdf"], accept_multiple_files=True, key="uploaded_files"
+    )
+    if st.button("Ingest Documents"):
+        if not uploaded_files:
+            st.warning("Please upload at least one PDF first.")
+        else:
+            with st.spinner("Processing your documents..."):
+                try:
+                    vectorstore = ingest_documents(uploaded_files)
+                    st.session_state.vectorstore = vectorstore
+                    st.session_state.qa_chain = build_qa_chain(vectorstore)
+                    st.session_state.chunks_count = vectorstore.index.ntotal
+                    st.success(
+                        f"✓ {st.session_state.chunks_count} chunks indexed from "
+                        f"{len(uploaded_files)} documents."
+                    )
+                except ValueError:
+                    st.error("No extractable text found. Please upload a readable PDF.")
+                except Exception:
+                    st.error("Something went wrong during ingestion. Please try again.")
 
-    # --- Settings ---
-
-    # --- Conversation Controls ---
-    pass
+    st.caption("Settings coming soon.")
+    st.divider()
+    st.markdown("### 🗂 Conversation")
+    if st.button("Clear Conversation"):
+        st.session_state.messages = []
+        st.rerun()
 
 if st.session_state.vectorstore is None:
     st.markdown(

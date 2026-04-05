@@ -80,3 +80,39 @@ if st.session_state.vectorstore is None:
         """,
         unsafe_allow_html=True,
     )
+else:
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            if message["role"] == "assistant" and message.get("sources"):
+                with st.expander("📄 Sources"):
+                    for doc in message["sources"]:
+                        source = doc.metadata.get("source", "Unknown")
+                        page = doc.metadata.get("page", "—")
+                        st.markdown(f"**Source:** {source} — Page {page}")
+                        st.caption(doc.page_content)
+
+    user_input = st.chat_input("Ask anything from your documents...")
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+        with st.chat_message("assistant"):
+            try:
+                with st.spinner("PageSage is thinking..."):
+                    result = st.session_state.qa_chain.invoke({"query": user_input})
+                answer = result["result"]
+                source_docs = result["source_documents"]
+                st.markdown(answer)
+                if source_docs:
+                    with st.expander("📄 Sources"):
+                        for doc in source_docs:
+                            source = doc.metadata.get("source", "Unknown")
+                            page = doc.metadata.get("page", "—")
+                            st.markdown(f"**Source:** {source} — Page {page}")
+                            st.caption(doc.page_content)
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": answer, "sources": source_docs}
+                )
+            except Exception:
+                st.error("PageSage encountered an issue. Please try again.")

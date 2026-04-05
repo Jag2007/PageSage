@@ -21,7 +21,10 @@ def get_llm() -> BaseChatModel:
     """Load the configured chat model provider while keeping the LLM layer swappable."""
     logger.info("Loading LLM provider: %s", LLM_PROVIDER)
     if LLM_PROVIDER == "groq":
-        return ChatGroq(model=LLM_MODEL, api_key=os.getenv("GROQ_API_KEY"))
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key or api_key == "your_groq_api_key_here":
+            raise ValueError("GROQ_API_KEY is missing or still set to the placeholder value.")
+        return ChatGroq(model=LLM_MODEL, api_key=api_key)
     # elif LLM_PROVIDER == "ollama":
     #     from langchain_community.llms import Ollama
     #     return Ollama(model=LLM_MODEL)

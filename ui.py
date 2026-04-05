@@ -1,6 +1,11 @@
 import logging
+import os
+
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import streamlit as st
+from groq import APIConnectionError, AuthenticationError, BadRequestError, RateLimitError
+
 from app.ingest import ingest_documents, load_existing_index
 from app.rag import build_qa_chain
 
@@ -60,7 +65,9 @@ with st.sidebar:
                     )
                 except ValueError:
                     st.error("No extractable text found. Please upload a readable PDF.")
+                    logger.warning("Document ingestion produced no extractable chunks.")
                 except Exception:
+                    logger.exception("Document ingestion failed.")
                     st.error("Something went wrong during ingestion. Please try again.")
 
     st.caption("Settings coming soon.")
@@ -114,5 +121,21 @@ else:
                 st.session_state.messages.append(
                     {"role": "assistant", "content": answer, "sources": source_docs}
                 )
+            except AuthenticationError:
+                logger.exception("Groq authentication failed during chat request.")
+                st.error("Groq authentication failed. Please check your API key in `.env`.")
+            except APIConnectionError:
+                logger.exception("Groq connection failed during chat request.")
+                st.error("PageSage could not reach Groq. Please check your internet connection and try again.")
+            except RateLimitError:
+                logger.exception("Groq rate limit reached during chat request.")
+                st.error("Groq rate limits were reached. Please wait a moment and try again.")
+            except BadRequestError:
+                logger.exception("Groq rejected the chat request.")
+                st.error("The selected Groq model is unavailable or the request was rejected.")
+            except ValueError:
+                logger.exception("PageSage chat configuration is invalid.")
+                st.error("PageSage is not fully configured. Please verify your `.env` settings.")
             except Exception:
+                logger.exception("Unexpected chat failure.")
                 st.error("PageSage encountered an issue. Please try again.")

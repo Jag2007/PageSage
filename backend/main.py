@@ -9,16 +9,11 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Load env variables
 load_dotenv()
-
-# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# App init
 app = FastAPI(title="PageSage")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,33 +22,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global DB (lazy loaded)
 db = None
 
 
-# -------------------------
-# Models
-# -------------------------
 class AskRequest(BaseModel):
+    """Request body for the ask endpoint."""
+
     question: str
 
 
-# -------------------------
-# Routes
-# -------------------------
-
 @app.get("/health")
 def health():
+    """Return backend health status."""
     return {"status": "ok", "app": "PageSage"}
 
 
 @app.get("/")
 def root():
+    """Return a simple API running message."""
     return {"message": "PageSage API is running 🚀"}
 
 
 @app.post("/upload_pdf")
 async def upload_pdf(files: list[UploadFile] = File(...)):
+    """Upload PDFs and ingest them into ChromaDB."""
     global db
     try:
         from app.ingest import ingest_documents, load_existing_db
@@ -68,7 +60,6 @@ async def upload_pdf(files: list[UploadFile] = File(...)):
 
         result = ingest_documents(normalized_files)
 
-        # Reload DB after ingestion
         db = load_existing_db()
 
         return {
@@ -88,10 +79,10 @@ async def upload_pdf(files: list[UploadFile] = File(...)):
 
 @app.post("/ask")
 def ask(request: AskRequest):
+    """Answer a question against the current ChromaDB collection."""
     global db
 
     try:
-        # Lazy load DB (THIS FIXES YOUR DEPLOY ISSUE 🚀)
         if db is None:
             from app.ingest import load_existing_db
             db = load_existing_db()
@@ -114,9 +105,6 @@ def ask(request: AskRequest):
         )
 
 
-# -------------------------
-# Run server
-# -------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)

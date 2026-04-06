@@ -8,6 +8,7 @@ from pathlib import Path
 import fitz
 
 logger = logging.getLogger(__name__)
+MAX_OCR_PAGES = 20
 
 
 def _get_tessdata_path() -> str | None:
@@ -38,11 +39,30 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
             logger.warning("Password-protected PDF rejected.")
             return "Error: The uploaded PDF is password-protected and cannot be processed."
 
+        page_texts: list[tuple[int, str]] = []
+        blank_page_numbers: list[int] = []
+        for index, page in enumerate(doc, start=1):
+            text = page.get_text("text").strip()
+            page_texts.append((index, text))
+            if not text:
+                blank_page_numbers.append(index)
+
+        has_selectable_text = any(text for _, text in page_texts)
+        if has_selectable_text:
+            pages = [f"[Page {index}]\n{text}" for index, text in page_texts]
+            combined_text = "\n\n".join(pages).strip()
+            logger.info(
+                "Extracted %s PDF pages; skipped OCR for %s blank/image-only pages.",
+                doc.page_count,
+                len(blank_page_numbers),
+            )
+            return combined_text
+
         pages: list[str] = []
         ocr_failures = 0
         for index, page in enumerate(doc, start=1):
-            text = page.get_text("text").strip()
-            if not text:
+            text = ""
+            if index <= MAX_OCR_PAGES:
                 try:
                     textpage = page.get_textpage_ocr(
                         language="eng", dpi=150, full=True, tessdata=_get_tessdata_path()

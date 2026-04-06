@@ -45,7 +45,7 @@ with st.sidebar:
                         ("files", (file.name, file.getvalue(), "application/pdf"))
                         for file in uploaded_files
                     ]
-                    response = requests.post(f"{BACKEND_URL}/upload_pdf", files=files, timeout=180)
+                    response = requests.post(f"{BACKEND_URL}/upload_pdf", files=files, timeout=60)
                     response.raise_for_status()
                     data = response.json()
                     st.session_state.pdf_uploaded = True
@@ -88,7 +88,7 @@ else:
             try:
                 with st.spinner("PageSage is thinking..."):
                     response = requests.post(
-                        f"{BACKEND_URL}/ask", json={"question": user_input}, timeout=120
+                        f"{BACKEND_URL}/ask", json={"question": user_input}, timeout=60
                     )
                     response.raise_for_status()
                     data = response.json()

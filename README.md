@@ -35,6 +35,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+The `requirements.txt` file intentionally lists only top-level project dependencies. This keeps deployment portable across Streamlit Community Cloud and local machines instead of freezing macOS-specific transitive packages.
+
 4. Add your Groq API key:
 
 ```bash
@@ -106,5 +108,6 @@ PageSage/
 - Groq requires internet access because the LLM is hosted.
 - FAISS indexes are saved under `faiss_index/default_workspace`.
 - `.env`, `venv/`, and `faiss_index/` are intentionally ignored by Git.
+- On Streamlit Community Cloud, deploy `ui.py` as the main file and add `GROQ_API_KEY` in app secrets or environment settings. If dependency resolution fails on a new Python release, choose Python 3.12 or 3.13 in the app's Advanced settings.
 
 *Built with care by Jagruthi Pulumati — because every page deserves to be understood.*

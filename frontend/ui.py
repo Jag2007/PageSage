@@ -1,15 +1,32 @@
 """Streamlit frontend for PageSage."""
 
 import os
+from pathlib import Path
 
 import requests
 import streamlit as st
 from dotenv import load_dotenv
 
-load_dotenv()
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(PROJECT_ROOT / ".env")
+
+
+def get_backend_url() -> str:
+    """Load the backend URL from environment configuration."""
+    backend_url = os.getenv("BACKEND_URL")
+    if not backend_url:
+        try:
+            backend_url = st.secrets.get("BACKEND_URL", "")
+        except Exception:
+            backend_url = ""
+    if not backend_url:
+        st.error("BACKEND_URL is not configured. Add it to .env or Streamlit secrets.")
+        st.stop()
+    return backend_url.rstrip("/")
+
 
 st.set_page_config(page_title="PageSage", page_icon="📖", layout="wide")
+BACKEND_URL = get_backend_url()
 
 if "pdf_uploaded" not in st.session_state:
     st.session_state.pdf_uploaded = False

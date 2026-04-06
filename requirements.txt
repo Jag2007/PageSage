@@ -1,22 +1,23 @@
 # UI
-streamlit==1.41.1
+streamlit
 
 # RAG & LLM
-langchain==0.3.20
-langchain-community==0.3.19
-langchain-core==0.3.41
-langchain-groq==0.2.4
-langchain-huggingface==0.1.2
+langchain
+langchain-community
+langchain-groq
+langchain-core
+langchain-huggingface
+langchain-text-splitters
 
 # Embeddings & Vector Store
-faiss-cpu==1.13.2
-sentence-transformers==3.4.1
-torch==2.10.0
-transformers==4.49.0
-huggingface-hub==0.29.1
+faiss-cpu
+sentence-transformers
+torch
+transformers
+huggingface-hub
 
 # PDF Parsing
-pymupdf==1.25.3
+pymupdf
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv

@@ -105,6 +105,7 @@ PageSage/
 ## Notes
 
 - PDF text extraction, chunking, embeddings, and FAISS retrieval run locally.
+- Scanned or image-only PDF pages use PyMuPDF OCR fallback. Streamlit Community Cloud installs Tesseract from `packages.txt`; for local OCR on macOS, install it with `brew install tesseract`.
 - Groq requires internet access because the LLM is hosted.
 - FAISS indexes are saved under `faiss_index/default_workspace`.
 - `.env`, `venv/`, and `faiss_index/` are intentionally ignored by Git.

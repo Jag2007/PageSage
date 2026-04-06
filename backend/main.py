@@ -47,6 +47,11 @@ def health():
     return {"status": "ok", "app": "PageSage"}
 
 
+@app.get("/")
+def root():
+    return {"message": "PageSage API is running 🚀"}
+
+
 @app.post("/upload_pdf")
 async def upload_pdf(files: list[UploadFile] = File(...)):
     global db

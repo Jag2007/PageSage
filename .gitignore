@@ -1,7 +1,8 @@
 .env
 venv/
+chroma_db/
 faiss_index/
 __pycache__/
 *.pyc
-.streamlit/secrets.toml
+**/.streamlit/secrets.toml
 sitecustomize.py

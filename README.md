@@ -1,19 +1,31 @@
 # 📖 PageSage
 ### *Wisdom from every page.*
 
-PageSage is a local, privacy-first document intelligence tool for extracting knowledge from PDF documents. Upload research papers, contracts, reports, notes, or technical manuals, then ask questions and receive precise, source-cited answers. Embedding and retrieval run locally with HuggingFace embeddings and FAISS; Groq is used only for LLM inference.
+PageSage is a production-style document intelligence RAG system split into two independently deployable services. The FastAPI backend owns PDF processing, OCR fallback, chunking, embeddings, ChromaDB persistence, retrieval, and Groq generation. The Streamlit frontend owns only the user interface and calls the backend over HTTP.
 
-The interface is intentionally refined: a dark blue, light blue, and white Streamlit experience with a calm document-reader feel rather than a noisy chatbot aesthetic.
+The current visual direction is calm and editorial with dark blues, light blues, and whites.
 
 ## Architecture
 
 ```text
-PDF Upload → Text Extraction → Chunking → Embedding → FAISS Index
-                                                           ↓
-                                         Answer ← LLM ← Retriever
+PDF Upload (Streamlit UI)
+        ↓ HTTP POST /upload_pdf
+FastAPI Backend (Render)
+        ↓
+Text Extraction + OCR Fallback (PyMuPDF)
+        ↓
+Chunking (RecursiveCharacterTextSplitter)
+        ↓
+Embedding (HuggingFace)
+        ↓
+ChromaDB Persistent Store
+        ↓
+User Question (Streamlit UI)
+        ↓ HTTP POST /ask
+Retriever → Groq LLM → Answer + Sources
 ```
 
-## Quick Start
+## Local Development
 
 1. Clone the repository:
 
@@ -22,93 +34,111 @@ git clone https://github.com/your-username/PageSage.git
 cd PageSage
 ```
 
-2. Create and activate a virtual environment:
+2. Create the root `.env` file:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-3. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-The `requirements.txt` file intentionally lists only top-level project dependencies. This keeps deployment portable across Streamlit Community Cloud and local machines instead of freezing macOS-specific transitive packages.
-
-4. Add your Groq API key:
-
-```bash
-printf "GROQ_API_KEY=your_groq_api_key_here\n" > .env
+printf "GROQ_API_KEY=your_groq_api_key_here\nBACKEND_URL=http://localhost:8000\n" > .env
 ```
 
 Replace `your_groq_api_key_here` with your real key from `https://console.groq.com`.
 
-5. Run PageSage:
+3. Run the backend:
 
 ```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+4. In a second terminal, run the frontend:
+
+```bash
+cd frontend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 streamlit run ui.py
 ```
 
-If your shell cannot find `streamlit`, run:
+Open the Streamlit URL, upload PDFs, ingest them, then ask questions.
 
-```bash
-python -m streamlit run ui.py
-```
+## Deployment
 
-## How It Works
+### Backend on Render
 
-- Retrieve: PageSage searches your ingested PDFs for the most relevant passages using vector similarity, not keyword matching.
-- Augment: The retrieved passages are inserted into the LLM prompt so answers stay grounded in your uploaded documents.
-- Generate: The LLM produces a concise, cited answer; if the documents do not contain the answer, PageSage says so instead of guessing.
+- Root directory: `backend`
+- Build command: `pip install -r requirements.txt`
+- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Runtime: `backend/runtime.txt`
+- Environment variable: `GROQ_API_KEY`
 
-## Agentic Behavior
+For OCR on scanned/image-only PDFs, install Tesseract in the backend environment. The code still handles missing OCR support gracefully, but image-only pages require Tesseract to extract text.
 
-PageSage is agentic in the sense that it does not simply paste retrieved chunks into the chat. The RAG prompt asks the model to reason over the retrieved context, cite the file and page where possible, and admit when the pages do not contain the answer. `app/rag.py` also includes a clear extension point for future query rewriting, multi-hop retrieval, or answer verification.
+### Frontend on Streamlit Cloud
+
+- Main file path: `frontend/ui.py`
+- Requirements file: `frontend/requirements.txt`
+- Runtime: `frontend/runtime.txt`
+- Environment variable or secret: `BACKEND_URL=https://your-render-backend-url`
+
+The frontend should not contain the Groq key. It only sends PDF uploads and questions to the backend.
+
+## API
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Check backend health |
+| `POST` | `/upload_pdf` | Upload one or more PDFs and build the ChromaDB index |
+| `POST` | `/ask` | Ask a question against the current ChromaDB collection |
+
+## Environment Variables
+
+| Variable | Service | Purpose |
+| --- | --- | --- |
+| `GROQ_API_KEY` | Backend | Authenticates Groq LLM requests |
+| `BACKEND_URL` | Frontend | Points Streamlit to the FastAPI backend |
 
 ## Tech Stack
 
 | Component | Tool | Why |
 | --- | --- | --- |
-| UI | Streamlit | Fast, polished, Python-native interface |
-| LLM | Groq — `llama-3.1-8b-instant` | Fast hosted inference with one API key |
+| Backend API | FastAPI | Clean HTTP boundary for RAG logic |
+| Frontend | Streamlit | Fast UI iteration and hosted frontend |
+| LLM | Groq — `llama-3.1-8b-instant` | Current working fast hosted model |
 | Embeddings | HuggingFace `sentence-transformers/all-MiniLM-L6-v2` | Local embeddings with no API key |
-| Vector Store | FAISS | Persistent local retrieval index |
-| PDF Parsing | PyMuPDF | Reliable text extraction from PDF bytes |
+| Vector Store | ChromaDB | Persistent local vector database |
+| PDF Parsing | PyMuPDF | Fast PDF text extraction with OCR fallback |
 | Text Splitting | LangChain `RecursiveCharacterTextSplitter` | Consistent chunks with overlap |
-| RAG Framework | LangChain | Clean retriever and QA chain abstraction |
-| Environment | python-dotenv | Simple `.env` secret loading |
+| Environment | python-dotenv | Local `.env` loading |
 
 ## Project Structure
 
 ```text
 PageSage/
-├── app/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── embeddings.py
-│   ├── ingest.py
-│   ├── pdf_utils.py
-│   └── rag.py
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   ├── embeddings.py
+│   │   ├── ingest.py
+│   │   ├── pdf_utils.py
+│   │   └── rag.py
+│   ├── main.py
+│   ├── requirements.txt
+│   └── runtime.txt
+├── frontend/
+│   ├── .streamlit/
+│   │   └── config.toml
+│   ├── ui.py
+│   ├── requirements.txt
+│   └── runtime.txt
 ├── assets/
 │   └── logo.png
-├── .streamlit/
-│   └── config.toml
 ├── .env
 ├── .gitignore
-├── README.md
-├── requirements.txt
-└── ui.py
+└── README.md
 ```
-
-## Notes
-
-- PDF text extraction, chunking, embeddings, and FAISS retrieval run locally.
-- Scanned or image-only PDF pages use PyMuPDF OCR fallback. Streamlit Community Cloud installs Tesseract from `packages.txt`; for local OCR on macOS, install it with `brew install tesseract`.
-- Groq requires internet access because the LLM is hosted.
-- FAISS indexes are saved under `faiss_index/default_workspace`.
-- `.env`, `venv/`, and `faiss_index/` are intentionally ignored by Git.
-- On Streamlit Community Cloud, deploy `ui.py` as the main file and add `GROQ_API_KEY` in app secrets or environment settings. If dependency resolution fails on a new Python release, choose Python 3.12 or 3.13 in the app's Advanced settings.
 
 *Built with care by Jagruthi Pulumati — because every page deserves to be understood.*

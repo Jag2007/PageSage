@@ -1,24 +1,17 @@
-# UI
-streamlit
-
-# RAG & LLM
+fastapi
+uvicorn[standard]
 langchain
-langchain-classic
 langchain-community
+langchain-chroma
 langchain-groq
 langchain-core
 langchain-huggingface
 langchain-text-splitters
-
-# Embeddings & Vector Store
-faiss-cpu
+chromadb
 sentence-transformers
 torch
 transformers
 huggingface-hub
-
-# PDF Parsing
 pymupdf
-
-# Utilities
 python-dotenv
+python-multipart

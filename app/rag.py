@@ -4,10 +4,15 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.prompts import PromptTemplate
+
+try:
+    from langchain.chains import RetrievalQA
+except (ImportError, ModuleNotFoundError):
+    from langchain_classic.chains import RetrievalQA
+
 from langchain_groq import ChatGroq
 
 from app.config import LLM_MODEL, LLM_PROVIDER, TOP_K

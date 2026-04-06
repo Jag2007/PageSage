@@ -3,6 +3,7 @@ streamlit
 
 # RAG & LLM
 langchain
+langchain-classic
 langchain-community
 langchain-groq
 langchain-core

@@ -140,5 +140,3 @@ PageSage/
 ├── .gitignore
 └── README.md
 ```
-
-*Built with care by Jagruthi Pulumati — because every page deserves to be understood.*
